@@ -1,6 +1,8 @@
 #written by Connor Templeton 4/21/22
 
+from re import M
 from tkinter import *
+from tkinter import simpledialog
 from tkinter.filedialog import asksaveasfile
 from tkinter.filedialog import askopenfilename
 from turtle import bgcolor
@@ -16,6 +18,7 @@ import time
 import serial.tools.list_ports
 ports = serial.tools.list_ports.comports()
 test_list = []
+group_list = []
 test_num = 2
 #had to define g for Arturo's auto detection
 g=None
@@ -32,7 +35,7 @@ window = Tk()
 window.title('MPS Research Environment')
 
 # dimensions of the main window
-window.geometry("550x500")
+window.geometry("600x500")
 
 # Color of Window
 window.configure(bg="#800000")
@@ -47,17 +50,16 @@ window.iconphoto(False, p1)
 
 
 
-
 #FUNCTIONS TO BE CALLED BY BUTTONS AND SUCH
 
 def add_test():
     global test_num, test_list
     #add all the things in dump but adding multiple buttons and text boxes
-    test_list.append([Button(master = window, bg = "#FFD700", command = plot, height = 1, width = 5, text = "Plot"),
-                    Button(window, bg = "#FFD700", text = 'Rename', command = lambda : save()),
-                    Button(window, bg = "#FFD700", text = 'Run Test', command = lambda : ReadData()),
+    test_list.append([Button(master = window, bg = "#FFD700", command = lambda m=str(test_num-1): plot(m), height = 1, width = 5, text = "Plot"),
+                    Button(window, bg = "#FFD700", text = 'Rename', command = lambda m=str(test_num-1): rename(m)),
+                    Button(window, bg = "#FFD700", text = 'Run Test', command = lambda m=str(test_num-1): ReadData(m)),
                     Text(window, height = 1, width = 30, font= ('Redux 12')),
-                    Button(window, bg = "#FFD700", text = 'Delete', command = lambda : delete_test())
+                    Button(window, bg = "#FFD700", text = 'Delete', command = lambda m=str(test_num-1): delete_test(m))
                     ])
     test_list[-1][0].grid(row=test_num, column=2, sticky='nsew')
     test_list[-1][1].grid(row=test_num, column=3, sticky='nsew')
@@ -67,31 +69,81 @@ def add_test():
     test_list[-1][4].grid(row=test_num, column=5, sticky='nsew')
     test_num += 1
 
+# def add_group():
+#     global group_num, group_list
+#     #add all the things in dump but adding multiple buttons and text boxes
+#     group_list.append([Text(master  = window, height = 1, width = 30, font= ('Redux 14 bold')),
+#                     Button(window, bg = "#FFD700", text = 'Add Test', command = lambda : add_test())
+#                     ])
+#     group_list[-1][0].insert('end', 'Set '+str(group_num))
+#     group_list[-1][0].grid(row=group_num, column=1, sticky='nsew')
+#     group_list[-1][1].grid(row=group_num, column=2, sticky='nsew')
+#     group_num += 1 
+
 #THIS NEEDS FUNCALITY TO DELETE TESTS
-def delete_test():
-    NOP
+def delete_test(which_test):
+    file='./Test_Set/test'+ which_test + '.txt'
+    os.remove(file)
     
 #THIS NEEDS FUNC TO SAVE THE DATA
-def ReadData():
+def ReadData(which_test):
 
     serialport.write(b'bb')
-
+    file='./Test_Set/test'+ which_test + '.txt'
     if(serialport.read(1).hex() != "BB"):
         serialport.write(b'cc')
-
-    with open('./ADC_Data_read/test.txt', 'w') as datafile:
+    with open(file, 'w') as datafile:
         datafile.write(serialport.read(510000).hex())
-        #https://realpython.com/python-gui-tkinter/#building-a-text-editor-example-app
-        #use this text editor file save for an example of file saving
 
 
-def save():
-    Files = [('Text Document', '*.txt'),
-            ('All Files', '*.*')]
-    file = asksaveasfile(filetypes = Files, defaultextension = Files)
+def rename(which_test):
+    filename = './Test_Set/' +simpledialog('Add file name', 'Please enter a name for your files.')
+    file='./Test_Set/test'+ which_test + '.txt'
+    os.rename(file, filename)
 
 #Plot Data, look at current python code to see the matplotlib use case there
-def plot():
+def plot(which_test):
+    test_file='./Test_Set/test'+ which_test + '.txt'
+    file = open(test_file, 'r')
+    list = []
+    a = []
+    cycle = 0
+    while 1:
+
+        char = file.read(1)          # read by character
+        if not char: break
+        if cycle == 6:
+            cycle = 0
+            a = a.replace('\n','')
+            b = int(a, 16)
+            c = (b/16777215)*4.096
+            list.append(c)
+
+        if cycle == 0:
+            a = char
+
+        else:
+            a += char
+
+        cycle += 1
+
+    b = int(a, 16)
+    c = (b/16777215)*4.096
+    list.append(c)
+    file.close()
+
+    with open(test_file, mode='w', newline='') as magicoil_output:
+        magicoil_writer = csv.writer(magicoil_output, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        time = 0.0000000000000000
+
+        for x in list:
+            magicoil_writer.writerow([time, x])
+            time = (time + 0.00000406504)
+    magicoil_output.close()
+
+
+
+
 
     new= Toplevel(window)
     new.geometry("500x500")
@@ -114,13 +166,13 @@ def plot():
     fig.supylabel("Voltage")
 
 	# list of squares
-    y = [np.sin(i/6)+1 for i in range(40)]
+    # y = [np.sin(i/6)+1 for i in range(40)]
 
 	# adding the subplot
     plot1 = fig.add_subplot(111)
 
 	# plotting the graph
-    plot1.plot(y)
+    plot1.plot(list)
     
 	# creating the Tkinter canvas
 	# containing the Matplotlib figure
@@ -146,7 +198,8 @@ def plot():
 #test title text box
 T= Text(window, height = 1, width = 30, font= ('Redux 14 bold'))
 T.grid(row=1, column=1)
-T.insert('end', "Set 1")
+T.insert('end', "Test Set")
+os.mkdir('./Test_Set')
 
 #device conncection text box
 check = Text(window, height = 1, width = 20)
@@ -158,7 +211,7 @@ button3.grid(row=1,column=2, pady=5)
 
 #new test group button
 # button3 = Button(window, bg = "#FFD700", text = 'Add Test group', command = lambda : add_group())
-# button3.grid(row=0,column=1, pady=5)
+# button3.grid(row=0,column=2, pady=5)
 
 #Auto determination of the device port-ID
 for port, desc, hwid in sorted(ports):
