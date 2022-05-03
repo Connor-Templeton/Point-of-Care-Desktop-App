@@ -1,12 +1,10 @@
 #written by Connor Templeton 4/21/22
 
-from re import M
 from tkinter import *
 from tkinter import simpledialog
 from tkinter.filedialog import asksaveasfile
 from tkinter.filedialog import askopenfilename
 from turtle import bgcolor
-import math
 import csv
 import os
 import numpy as np
@@ -17,6 +15,8 @@ import serial
 import time
 import serial.tools.list_ports
 ports = serial.tools.list_ports.comports()
+
+
 test_list = []
 group_list = []
 test_num = 2
@@ -69,6 +69,9 @@ def add_test():
     test_list[-1][4].grid(row=test_num, column=5, sticky='nsew')
     test_num += 1
 
+# This is not implemented as the additon of other groups creates problems with the grid
+# formatting. It will override the labels. Using Classes and keeping track of how many tests
+# each group has could solve this
 # def add_group():
 #     global group_num, group_list
 #     #add all the things in dump but adding multiple buttons and text boxes
@@ -80,10 +83,15 @@ def add_test():
 #     group_list[-1][1].grid(row=group_num, column=2, sticky='nsew')
 #     group_num += 1 
 
-#THIS NEEDS FUNCALITY TO DELETE TESTS
 def delete_test(which_test):
     file='./Test_Set/test'+ which_test + '.txt'
     os.remove(file)
+    test_list.append([
+                    Text(window, height = 1, width = 40, font= ('Redux 12'))
+                    ])
+    test_list[-1][0].grid(row=int(which_test), column=1, sticky='nsew')
+    test_list[-1][0].insert('end', 'deleted')
+
     
 #THIS NEEDS FUNC TO SAVE THE DATA
 def ReadData(which_test):
@@ -100,6 +108,18 @@ def rename(which_test):
     filename = './Test_Set/' +simpledialog('Add file name', 'Please enter a name for your files.')
     file='./Test_Set/test'+ which_test + '.txt'
     os.rename(file, filename)
+    test_list.append([Button(master = window, bg = "#FFD700", command = lambda m=which_test: plot(m), height = 1, width = 5, text = "Plot"),
+                    Button(window, bg = "#FFD700", text = 'Rename', command = lambda m=which_test: rename(m)),
+                    Button(window, bg = "#FFD700", text = 'Run Test', command = lambda m=which_test: ReadData(m)),
+                    Text(window, height = 1, width = 30, font= ('Redux 12')),
+                    Button(window, bg = "#FFD700", text = 'Delete', command = lambda m=which_test: delete_test(m))
+                    ])
+    test_list[-1][0].grid(row=int(which_test), column=2, sticky='nsew')
+    test_list[-1][1].grid(row=int(which_test), column=3, sticky='nsew')
+    test_list[-1][2].grid(row=int(which_test), column=4, sticky='nsew')
+    test_list[-1][3].grid(row=int(which_test), column=1, sticky='nsew')
+    test_list[-1][3].insert('end', filename)
+    test_list[-1][4].grid(row=int(which_test), column=5, sticky='nsew')
 
 #Plot Data, look at current python code to see the matplotlib use case there
 def plot(which_test):
@@ -144,7 +164,7 @@ def plot(which_test):
 
 
 
-
+    #Plot window creation
     new= Toplevel(window)
     new.geometry("500x500")
     new.title("Plot for Test 1")
@@ -164,9 +184,6 @@ def plot(which_test):
 				dpi = 100)
     fig.supxlabel("Time")
     fig.supylabel("Voltage")
-
-	# list of squares
-    # y = [np.sin(i/6)+1 for i in range(40)]
 
 	# adding the subplot
     plot1 = fig.add_subplot(111)
@@ -193,13 +210,15 @@ def plot(which_test):
 
 
 
+
 #START-UP PROCEDURE, BUTTONS AND TEXT
 
 #test title text box
 T= Text(window, height = 1, width = 30, font= ('Redux 14 bold'))
 T.grid(row=1, column=1)
 T.insert('end', "Test Set")
-os.mkdir('./Test_Set')
+if not os.path.exists('./Test_Set'):
+    os.mkdir('./Test_Set')
 
 #device conncection text box
 check = Text(window, height = 1, width = 20)
