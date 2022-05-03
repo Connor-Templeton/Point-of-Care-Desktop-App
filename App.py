@@ -18,7 +18,7 @@ ports = serial.tools.list_ports.comports()
 
 
 test_list = []
-group_list = []
+# group_list = []
 test_num = 2
 #had to define g for Arturo's auto detection
 g=None
