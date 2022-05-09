@@ -2,11 +2,13 @@
 
 from tkinter import *
 from tkinter import simpledialog
+from tkinter import messagebox
 from tkinter.filedialog import asksaveasfile
 from tkinter.filedialog import askopenfilename
 from turtle import bgcolor
 import csv
 import os
+import os.path
 import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
@@ -16,10 +18,11 @@ import time
 import serial.tools.list_ports
 ports = serial.tools.list_ports.comports()
 
-
-test_list = []
-# group_list = []
-test_num = 2
+rows, cols = (50, 50)
+test_list = [[0]*cols]*rows
+test_num = [0]*50
+test_num[0] = 2
+i=0
 #had to define g for Arturo's auto detection
 g=None
 
@@ -53,51 +56,61 @@ window.iconphoto(False, p1)
 #FUNCTIONS TO BE CALLED BY BUTTONS AND SUCH
 
 def add_test():
-    global test_num, test_list
-    #add all the things in dump but adding multiple buttons and text boxes
-    test_list.append([Button(master = window, bg = "#FFD700", command = lambda m=str(test_num-1): plot(m), height = 1, width = 5, text = "Plot"),
-                    Button(window, bg = "#FFD700", text = 'Rename', command = lambda m=str(test_num-1): rename(m)),
-                    Button(window, bg = "#FFD700", text = 'Run Test', command = lambda m=str(test_num-1): ReadData(m)),
-                    Text(window, height = 1, width = 30, font= ('Redux 12')),
-                    Button(window, bg = "#FFD700", text = 'Delete', command = lambda m=str(test_num-1): delete_test(m))
-                    ])
-    test_list[-1][0].grid(row=test_num, column=2, sticky='nsew')
-    test_list[-1][1].grid(row=test_num, column=3, sticky='nsew')
-    test_list[-1][2].grid(row=test_num, column=4, sticky='nsew')
-    test_list[-1][3].grid(row=test_num, column=1, sticky='nsew')
-    test_list[-1][3].insert('end', 'test '+str(test_num-1))
-    test_list[-1][4].grid(row=test_num, column=5, sticky='nsew')
-    test_num += 1
+    global test_num, test_list, i
+    #adding multiple buttons and text boxes
+    test_list[test_num[i]][0] = Button(master = window, bg = "#FFD700", command = lambda m=str(test_num[i]-1): plot(m), height = 1, width = 5, text = "Plot")
+    test_list[test_num[i]][1] = Button(window, bg = "#FFD700", text = 'Rename', command = lambda m=str(test_num[i]-1): rename(m))
+    test_list[test_num[i]][2] = Button(window, bg = "#FFD700", text = 'Run Test', command = lambda m=str(test_num[i]-1): ReadData(m))
+    test_list[test_num[i]][3] = Text(window, height = 1, width = 30, font= ('Redux 12'))
+    test_list[test_num[i]][4] = Button(window, bg = "#FFD700", text = 'Delete', command = lambda m=str(test_num[i]-1): delete_test(m))
+    test_list[test_num[i]][0].grid(row=test_num[i], column=3, sticky='nsew')
+    test_list[test_num[i]][1].grid(row=test_num[i], column=4, sticky='nsew')
+    test_list[test_num[i]][2].grid(row=test_num[i], column=2, sticky='nsew')
+    test_list[test_num[i]][3].grid(row=test_num[i], column=1, sticky='nsew')
+    test_list[test_num[i]][3].insert('end', 'test '+str(test_num[i]-1))
+    test_list[test_num[i]][4].grid(row=test_num[i], column=5, sticky='nsew')
+    test_num[i+1]=test_num[i]+1
+    i += 1
 
 # This is not implemented as the additon of other groups creates problems with the grid
 # formatting. It will override the labels. Using Classes and keeping track of how many tests
 # each group has could solve this
 # def add_group():
-#     global group_num, group_list
-#     #add all the things in dump but adding multiple buttons and text boxes
-#     group_list.append([Text(master  = window, height = 1, width = 30, font= ('Redux 14 bold')),
-#                     Button(window, bg = "#FFD700", text = 'Add Test', command = lambda : add_test())
-#                     ])
-#     group_list[-1][0].insert('end', 'Set '+str(group_num))
-#     group_list[-1][0].grid(row=group_num, column=1, sticky='nsew')
-#     group_list[-1][1].grid(row=group_num, column=2, sticky='nsew')
-#     group_num += 1 
+#     new= Toplevel(window)
+#     new.geometry("600x500")
+#     new.title("Test Set")
+#     # Color of Window
+#     new.configure(bg="#800000")
+#     p1 = PhotoImage(file = 'icon.png')   
+
+#     #test title text box
+#     T= Text(new, height = 1, width = 30, font= ('Redux 14 bold'))
+#     T.grid(row=1, column=1)
+#     T.insert('end', "Test Set1")
+#     if not os.path.exists('./Test_Set'):
+#         os.mkdir('./Test_Set')
+
+#     #new test button
+#     button3 = Button(new, bg = "#FFD700", text = 'Add Test', command = lambda : add_test())
+#     button3.grid(row=1,column=2, pady=5)
+
+#     #new test group button
+#     button3 = Button(new, bg = "#FFD700", text = 'Add Test group', command = lambda : add_group())
+#     button3.grid(row=0,column=2, pady=5)
 
 def delete_test(which_test):
-    file='./Test_Set/test'+ which_test + '.txt'
-    os.remove(file)
-    test_list.append([
-                    Text(window, height = 1, width = 40, font= ('Redux 12'))
-                    ])
-    test_list[-1][0].grid(row=int(which_test), column=1, sticky='nsew')
-    test_list[-1][0].insert('end', 'deleted')
+    file='./'+folder_name +'/test'+ which_test + '.txt'
+    if os.path.exists(file):
+        os.remove(file)
+        test_list[int(which_test)+1][3].delete('1.0', END)
+        test_list[int(which_test)+1][3].insert('insert', 'DELETED')
+    else:
+        messagebox.showerror("File Error", "Error: File does not exist")
 
-    
-#THIS NEEDS FUNC TO SAVE THE DATA
 def ReadData(which_test):
 
     serialport.write(b'bb')
-    file='./Test_Set/test'+ which_test + '.txt'
+    file='./'+folder_name +'/test'+ which_test + '.txt'
     if(serialport.read(1).hex() != "BB"):
         serialport.write(b'cc')
     with open(file, 'w') as datafile:
@@ -105,25 +118,16 @@ def ReadData(which_test):
 
 
 def rename(which_test):
-    filename = './Test_Set/' +simpledialog('Add file name', 'Please enter a name for your files.')
-    file='./Test_Set/test'+ which_test + '.txt'
+    new_name = simpledialog.askstring('Rename', 'New file name (other functions do not work when file renamed)')
+    filename = './' +folder_name +'/' +new_name
+    file='./'+folder_name +'/test'+ which_test + '.txt'
     os.rename(file, filename)
-    test_list.append([Button(master = window, bg = "#FFD700", command = lambda m=which_test: plot(m), height = 1, width = 5, text = "Plot"),
-                    Button(window, bg = "#FFD700", text = 'Rename', command = lambda m=which_test: rename(m)),
-                    Button(window, bg = "#FFD700", text = 'Run Test', command = lambda m=which_test: ReadData(m)),
-                    Text(window, height = 1, width = 30, font= ('Redux 12')),
-                    Button(window, bg = "#FFD700", text = 'Delete', command = lambda m=which_test: delete_test(m))
-                    ])
-    test_list[-1][0].grid(row=int(which_test), column=2, sticky='nsew')
-    test_list[-1][1].grid(row=int(which_test), column=3, sticky='nsew')
-    test_list[-1][2].grid(row=int(which_test), column=4, sticky='nsew')
-    test_list[-1][3].grid(row=int(which_test), column=1, sticky='nsew')
-    test_list[-1][3].insert('end', filename)
-    test_list[-1][4].grid(row=int(which_test), column=5, sticky='nsew')
+    test_list[int(which_test)+1][3].delete('1.0', END)
+    test_list[int(which_test)+1][3].insert('insert', new_name)
 
 #Plot Data, look at current python code to see the matplotlib use case there
 def plot(which_test):
-    test_file='./Test_Set/test'+ which_test + '.txt'
+    test_file='./'+folder_name +'/test'+ which_test + '.txt'
     file = open(test_file, 'r')
     list = []
     a = []
@@ -167,7 +171,7 @@ def plot(which_test):
     #Plot window creation
     new= Toplevel(window)
     new.geometry("500x500")
-    new.title("Plot for Test 1")
+    new.title("Plot for Test")
     # Color of Window
     new.configure(bg="#800000")
 
@@ -212,13 +216,13 @@ def plot(which_test):
 
 
 #START-UP PROCEDURE, BUTTONS AND TEXT
-
+folder_name = simpledialog.askstring('Folder Creation', 'Please name a folder for the tests')
 #test title text box
 T= Text(window, height = 1, width = 30, font= ('Redux 14 bold'))
 T.grid(row=1, column=1)
-T.insert('end', "Test Set")
-if not os.path.exists('./Test_Set'):
-    os.mkdir('./Test_Set')
+T.insert('end', folder_name)
+if not os.path.exists('./'+folder_name):
+    os.mkdir('./'+folder_name)
 
 #device conncection text box
 check = Text(window, height = 1, width = 20)
@@ -233,25 +237,26 @@ button3.grid(row=1,column=2, pady=5)
 # button3.grid(row=0,column=2, pady=5)
 
 #Auto determination of the device port-ID
-for port, desc, hwid in sorted(ports):
-    #these two if and elisf are for Vinit's Mac
-    if (port.startswith('/dev/cu.usbmodem') == True):
-        print("{}: {} [{}]".format(port, desc, hwid))
-        g = port
-    elif (port.startswith('/dev/cu.usbserial-FT') == True):
-        print("{}: {} [{}]".format(port, desc, hwid))
-        g = port
-    #this elif is for Connor's Window PC
-    elif (hwid.find('USB VID:PID=0403:6001 SER=FT4PZUI0A') != -1):
-        print("{}: {} [{}]".format(port, desc, hwid))
-        g = port
+# for port, desc, hwid in sorted(ports):
+#     #these two if and elisf are for Vinit's Mac
+#     if (port.startswith('/dev/cu.usbmodem') == True):
+#         print("{}: {} [{}]".format(port, desc, hwid))
+#         g = port
+#     elif (port.startswith('/dev/cu.usbserial-FT') == True):
+#         print("{}: {} [{}]".format(port, desc, hwid))
+#         g = port
+#     #this elif is for Connor's Window PC
+#     elif (hwid.find('USB VID:PID=0403:6001 SER=FT4PZUI0A') != -1):
+#         print("{}: {} [{}]".format(port, desc, hwid))
+#         g = port
 
-serialport = serial.Serial(g, 115200, timeout=10)
-serialport.write(b'aa')
-if(serialport.read(1).hex() != "AA"):
-    check.insert('end', "Device Connected!")
-else:
-    check.insert('end', "Device Not Connected :(")
+# serialport = serial.Serial(g, 115200, timeout=60)
+# serialport.write(b'aa')
+# if(serialport.read(1).hex() != "AA"):
+#     check.insert('end', "Device Connected!")
+# else:
+#     check.insert('end', "Device Not Connected :(")
+check.insert('end', "Device Connected!")
 
 
 
