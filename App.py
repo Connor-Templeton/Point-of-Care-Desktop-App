@@ -74,7 +74,8 @@ def add_test():
 
 # This is not implemented as the additon of other groups creates problems with the grid
 # formatting. It will override the labels. Using Classes and keeping track of how many tests
-# each group has could solve this
+# each group has could solve this. Creatng different test folders each time is the solution to
+# this right now
 # def add_group():
 #     new= Toplevel(window)
 #     new.geometry("600x500")
@@ -108,22 +109,23 @@ def delete_test(which_test):
         messagebox.showerror("File Error", "Error: File does not exist")
 
 def ReadData(which_test):
-
-    serialport.write(b'bb')
     file='./'+folder_name +'/test'+ which_test + '.txt'
+    serialport.write(b'bb')
     if(serialport.read(1).hex() != "BB"):
         serialport.write(b'cc')
     with open(file, 'w') as datafile:
         datafile.write(serialport.read(510000).hex())
 
-
 def rename(which_test):
     new_name = simpledialog.askstring('Rename', 'New file name (other functions do not work when file renamed)')
     filename = './' +folder_name +'/' +new_name
     file='./'+folder_name +'/test'+ which_test + '.txt'
-    os.rename(file, filename)
-    test_list[int(which_test)+1][3].delete('1.0', END)
-    test_list[int(which_test)+1][3].insert('insert', new_name)
+    if not os.path.exists(filename):
+        os.rename(file, filename)
+        test_list[int(which_test)+1][3].delete('1.0', END)
+        test_list[int(which_test)+1][3].insert('insert', new_name)
+    else:
+        messagebox.showerror("File Error", "Error: File already exists")    
 
 #Plot Data, look at current python code to see the matplotlib use case there
 def plot(which_test):
@@ -237,26 +239,25 @@ button3.grid(row=1,column=2, pady=5)
 # button3.grid(row=0,column=2, pady=5)
 
 #Auto determination of the device port-ID
-# for port, desc, hwid in sorted(ports):
-#     #these two if and elisf are for Vinit's Mac
-#     if (port.startswith('/dev/cu.usbmodem') == True):
-#         print("{}: {} [{}]".format(port, desc, hwid))
-#         g = port
-#     elif (port.startswith('/dev/cu.usbserial-FT') == True):
-#         print("{}: {} [{}]".format(port, desc, hwid))
-#         g = port
-#     #this elif is for Connor's Window PC
-#     elif (hwid.find('USB VID:PID=0403:6001 SER=FT4PZUI0A') != -1):
-#         print("{}: {} [{}]".format(port, desc, hwid))
-#         g = port
+for port, desc, hwid in sorted(ports):
+    #these two if and elisf are for Vinit's Mac
+    if (port.startswith('/dev/cu.usbmodem') == True):
+        print("{}: {} [{}]".format(port, desc, hwid))
+        g = port
+    elif (port.startswith('/dev/cu.usbserial-FT') == True):
+        print("{}: {} [{}]".format(port, desc, hwid))
+        g = port
+    #this elif is for Connor's Window PC
+    elif (hwid.find('USB VID:PID=0403:6001 SER=FT4PZUI0A') != -1):
+        print("{}: {} [{}]".format(port, desc, hwid))
+        g = port
 
-# serialport = serial.Serial(g, 115200, timeout=60)
-# serialport.write(b'aa')
-# if(serialport.read(1).hex() != "AA"):
-#     check.insert('end', "Device Connected!")
-# else:
-#     check.insert('end', "Device Not Connected :(")
-check.insert('end', "Device Connected!")
+serialport = serial.Serial(g, 115200, timeout=60)
+serialport.write(b'aa')
+if(serialport.read(1).hex() != "AA"):
+    check.insert('end', "Device Connected!")
+else:
+    check.insert('end', "Device Not Connected :(")
 
 
 
